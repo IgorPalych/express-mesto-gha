@@ -1,7 +1,8 @@
 {
   "extends": "airbnb-base",
   "rules": {
-    "eslint no-underscore-dangle": [
+    "no-console": "off",
+    "no-underscore-dangle": [
       "error",
       {
         "allow": [
