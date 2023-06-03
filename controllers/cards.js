@@ -1,5 +1,11 @@
 const CardModel = require('../models/card');
 
+const {
+  VALIDATION_ERROR,
+  NOT_FOUND_ERROR,
+  SERVER_ERROR,
+} = require('../utils/constants');
+
 // в этих контроллерах использован подход try-catch
 
 const getCards = async (req, res) => {
@@ -7,10 +13,8 @@ const getCards = async (req, res) => {
     const cards = await CardModel.find({});
     res.send(cards);
   } catch (err) {
-    res.status(500).send({
+    res.status(SERVER_ERROR).send({
       message: 'Ошибка сервера',
-      err: err.message,
-      stack: err.stack,
     });
   }
 };
@@ -26,12 +30,10 @@ const createCard = async (req, res) => {
     res.send(card);
   } catch (err) {
     if (err.name === 'ValidationError') {
-      res.status(400).send({ message: 'Переданы некорректные данные' });
+      res.status(VALIDATION_ERROR).send({ message: 'Переданы некорректные данные' });
     } else {
-      res.status(500).send({
+      res.status(SERVER_ERROR).send({
         message: 'Ошибка сервера',
-        err: err.message,
-        stack: err.stack,
       });
     }
   }
@@ -41,18 +43,16 @@ const deleteCard = async (req, res) => {
   try {
     const card = await CardModel.findByIdAndRemove(req.params.cardId);
     if (!card) {
-      res.status(404).send({ message: 'Карточка не найдена' });
+      res.status(NOT_FOUND_ERROR).send({ message: 'Карточка не найдена' });
       return;
     }
     res.send(card);
   } catch (err) {
     if (err.name === 'CastError') {
-      res.status(400).send({ message: 'Переданы неверные данные' });
+      res.status(VALIDATION_ERROR).send({ message: 'Переданы неверные данные' });
     } else {
-      res.status(500).send({
+      res.status(SERVER_ERROR).send({
         message: 'Ошибка сервера',
-        err: err.message,
-        stack: err.stack,
       });
     }
   }
@@ -66,28 +66,22 @@ const likeCard = async (req, res) => {
       { new: true },
     );
     if (!card) {
-      res.status(404).send({ message: 'Карточка не найдена' });
+      res.status(NOT_FOUND_ERROR).send({ message: 'Карточка не найдена' });
       return;
     }
     res.send(card);
   } catch (err) {
     if (err.name === 'CastError') {
-      res.status(400).send({ message: 'Переданы неверные данные' });
+      res.status(VALIDATION_ERROR).send({ message: 'Переданы неверные данные' });
     } else {
-      res.status(500).send({
+      res.status(SERVER_ERROR).send({
         message: 'Ошибка сервера',
-        err: err.message,
-        stack: err.stack,
       });
     }
   }
 };
 
 const dislikeCard = async (req, res) => {
-  if (!req.params.cardId) {
-    res.status(404).send({ message: 'Карточка не найдена' });
-    return;
-  }
   try {
     const card = await CardModel.findByIdAndUpdate(
       req.params.cardId,
@@ -95,18 +89,16 @@ const dislikeCard = async (req, res) => {
       { new: true },
     );
     if (!card) {
-      res.status(404).send({ message: 'Карточка не найдена' });
+      res.status(NOT_FOUND_ERROR).send({ message: 'Карточка не найдена' });
       return;
     }
     res.send(card);
   } catch (err) {
     if (err.name === 'CastError') {
-      res.status(400).send({ message: 'Переданы неверные данные' });
+      res.status(VALIDATION_ERROR).send({ message: 'Переданы неверные данные' });
     } else {
-      res.status(500).send({
+      res.status(SERVER_ERROR).send({
         message: 'Ошибка сервера',
-        err: err.message,
-        stack: err.stack,
       });
     }
   }

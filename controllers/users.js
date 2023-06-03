@@ -1,5 +1,11 @@
 const UserModel = require('../models/user');
 
+const {
+  VALIDATION_ERROR,
+  NOT_FOUND_ERROR,
+  SERVER_ERROR,
+} = require('../utils/constants');
+
 // в этих контроллерах использован подход с промисами
 
 const getUsers = (req, res) => {
@@ -7,11 +13,9 @@ const getUsers = (req, res) => {
     .then((users) => {
       res.send(users);
     })
-    .catch((err) => {
-      res.status(500).send({
+    .catch(() => {
+      res.status(SERVER_ERROR).send({
         message: 'Ошибка сервера',
-        err: err.message,
-        stack: err.stack,
       });
     });
 };
@@ -21,19 +25,17 @@ const getUserById = (req, res) => {
   UserModel.findById(id)
     .then((user) => {
       if (!user) {
-        res.status(404).send({ message: 'Пользователь не найден' });
+        res.status(NOT_FOUND_ERROR).send({ message: 'Пользователь не найден' });
         return;
       }
       res.send(user);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Переданы неверные данные' });
+        res.status(VALIDATION_ERROR).send({ message: 'Переданы неверные данные' });
       } else {
-        res.status(500).send({
+        res.status(SERVER_ERROR).send({
           message: 'Ошибка сервера',
-          err: err.message,
-          stack: err.stack,
         });
       }
     });
@@ -55,12 +57,10 @@ const updateProfile = (req, res) => {
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Переданы неверные данные' });
+        res.status(VALIDATION_ERROR).send({ message: 'Переданы неверные данные' });
       } else {
-        res.status(500).send({
+        res.status(SERVER_ERROR).send({
           message: 'Ошибка сервера',
-          err: err.message,
-          stack: err.stack,
         });
       }
     });
@@ -76,11 +76,9 @@ const updateAvatar = (req, res) => {
     .then((user) => {
       res.send(user);
     })
-    .catch((err) => {
-      res.status(500).send({
+    .catch(() => {
+      res.status(SERVER_ERROR).send({
         message: 'Ошибка сервера',
-        err: err.message,
-        stack: err.stack,
       });
     });
 };
@@ -93,12 +91,10 @@ const createUser = (req, res) => {
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Переданы некорректные данные' });
+        res.status(VALIDATION_ERROR).send({ message: 'Переданы некорректные данные' });
       } else {
-        res.status(500).send({
+        res.status(SERVER_ERROR).send({
           message: 'Ошибка сервера',
-          err: err.message,
-          stack: err.stack,
         });
       }
     });
