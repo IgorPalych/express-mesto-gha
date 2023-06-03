@@ -7,8 +7,12 @@ const getUsers = (req, res) => {
     .then((users) => {
       res.send(users);
     })
-    .catch((error) => {
-      console.log(error);
+    .catch((err) => {
+      res.status(500).send({
+        message: 'Ошибка сервера',
+        err: err.message,
+        stack: err.stack,
+      });
     });
 };
 
@@ -16,21 +20,22 @@ const getUserById = (req, res) => {
   const id = req.params.userId;
   UserModel.findById(id)
     .then((user) => {
+      if (!user) {
+        res.status(404).send({ message: 'Пользователь не найден' });
+        return;
+      }
       res.send(user);
     })
-    .catch((error) => {
-      console.log(error);
-    });
-};
-
-const createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
-  UserModel.create({ name, about, avatar })
-    .then((user) => {
-      res.send(`Пользователь ${user} создан`);
-    })
-    .catch((error) => {
-      console.log(error);
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        res.status(400).send({ message: 'Переданы неверные данные' });
+      } else {
+        res.status(500).send({
+          message: 'Ошибка сервера',
+          err: err.message,
+          stack: err.stack,
+        });
+      }
     });
 };
 
@@ -39,13 +44,25 @@ const updateProfile = (req, res) => {
   UserModel.findByIdAndUpdate(
     req.user._id,
     { name, about },
-    { new: true },
+    {
+      new: true,
+      runValidators: true,
+      upsert: false,
+    },
   )
     .then((user) => {
-      res.send(`Профиль пользователя ${user} обновлен`);
+      res.send(user);
     })
-    .catch((error) => {
-      console.log(error);
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        res.status(400).send({ message: 'Переданы неверные данные' });
+      } else {
+        res.status(500).send({
+          message: 'Ошибка сервера',
+          err: err.message,
+          stack: err.stack,
+        });
+      }
     });
 };
 
@@ -57,10 +74,33 @@ const updateAvatar = (req, res) => {
     { new: true },
   )
     .then((user) => {
-      res.send(`Аватар пользователя ${user} обновлен`);
+      res.send(user);
     })
-    .catch((error) => {
-      console.log(error);
+    .catch((err) => {
+      res.status(500).send({
+        message: 'Ошибка сервера',
+        err: err.message,
+        stack: err.stack,
+      });
+    });
+};
+
+const createUser = (req, res) => {
+  const { name, about, avatar } = req.body;
+  UserModel.create({ name, about, avatar })
+    .then((user) => {
+      res.status(201).send({ data: user });
+    })
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        res.status(400).send({ message: 'Переданы некорректные данные' });
+      } else {
+        res.status(500).send({
+          message: 'Ошибка сервера',
+          err: err.message,
+          stack: err.stack,
+        });
+      }
     });
 };
 
