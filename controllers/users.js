@@ -1,9 +1,12 @@
+const bcrypt = require('bcryptjs');
 const UserModel = require('../models/user');
 
 const {
   VALIDATION_ERROR,
   NOT_FOUND_ERROR,
   SERVER_ERROR,
+  MONGO_DUPLICATE_KEY_ERROR,
+  SALT_ROUNDS,
 } = require('../utils/constants');
 
 // в этих контроллерах использован подход с промисами
@@ -84,13 +87,21 @@ const updateAvatar = (req, res) => {
 };
 
 const createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
-  UserModel.create({ name, about, avatar })
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
+
+  bcrypt.hash(password, SALT_ROUNDS)
+    .then((hash) => UserModel.create({
+      name, about, avatar, email, password: hash,
+    }))
     .then((user) => {
-      res.status(201).send({ data: user });
+      res.status(201).send({ data: user }); /* Проверить в ТЗ, что отправлять */
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
+      if (err.code === MONGO_DUPLICATE_KEY_ERROR) {
+        res.status(409).send({ messsage: 'Пользователь с этим email уже существет' });
+      } else if (err.name === 'ValidationError') {
         res.status(VALIDATION_ERROR).send({ message: 'Переданы некорректные данные' });
       } else {
         res.status(SERVER_ERROR).send({
