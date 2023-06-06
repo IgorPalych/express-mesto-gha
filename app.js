@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 
 const router = require('./routes');
 
+const { login, createUser } = require('./controllers/users');
+
 const { PORT = 3000 } = process.env;
 
 const app = express();
@@ -19,10 +21,13 @@ app.use(express.json());
 
 app.use((req, res, next) => {
   req.user = {
-    _id: '646e2b3907b8944b5c980a2a',
+    _id: '647da5d4e18c986e7f19c5be',
   };
   next();
 });
+
+app.post('/signin', login);
+app.post('/signup', createUser);
 
 app.use(router);
 

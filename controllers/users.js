@@ -1,4 +1,6 @@
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
 const UserModel = require('../models/user');
 
 const {
@@ -7,6 +9,7 @@ const {
   SERVER_ERROR,
   MONGO_DUPLICATE_KEY_ERROR,
   SALT_ROUNDS,
+  SECRET_KEY,
 } = require('../utils/constants');
 
 // в этих контроллерах использован подход с промисами
@@ -56,7 +59,7 @@ const updateProfile = (req, res) => {
     },
   )
     .then((user) => {
-      res.send(user);
+      res.send({ user });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -111,10 +114,34 @@ const createUser = (req, res) => {
     });
 };
 
+const login = (req, res) => {
+  const { email, password } = req.body;
+  return UserModel.findUserByCredentials(email, password)
+    .then((user) => {
+      const token = jwt.sign({ _id: user._id }, SECRET_KEY, { expiresIn: '7d' });
+      res.cookie('jwt', token, {
+        maxAge: 3600000 * 24 * 7,
+        httpOnly: true,
+        sameSite: true,
+      });
+      res.status(200).send({ message: 'Вы успешно авторизовались!' });
+    })
+    .catch((err) => {
+      if (err.message === 'NotFound') {
+        res.status(401).send({ message: 'Неправильные почта или пароль' });
+      } else {
+        res.status(SERVER_ERROR).send({
+          message: 'Ошибка сервера',
+        });
+      }
+    });
+};
+
 module.exports = {
   getUsers,
   getUserById,
   createUser,
   updateProfile,
   updateAvatar,
+  login,
 };
