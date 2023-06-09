@@ -1,12 +1,12 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
 const UserModel = require('../models/user');
 
+const BadRequestError = require('../errors/BadRequestError'); /* 400 */
+const NotFoundError = require('../errors/NotFoundError'); /* 404 */
+const UserExist = require('../errors/UserExist'); /* 409 */
+
 const {
-  VALIDATION_ERROR,
-  NOT_FOUND_ERROR,
-  SERVER_ERROR,
   MONGO_DUPLICATE_KEY_ERROR,
   SALT_ROUNDS,
   SECRET_KEY,
@@ -14,60 +14,50 @@ const {
 
 // в этих контроллерах использован подход с промисами
 
-const getUsers = (req, res) => {
+const getUsers = (req, res, next) => {
   UserModel.find({})
     .then((users) => {
-      res.send(users);
+      res.send({ data: users });
     })
-    .catch(() => {
-      res.status(SERVER_ERROR).send({
-        message: 'Ошибка сервера',
-      });
-    });
+    .catch((err) => next(err));
 };
 
-const getUserById = (req, res) => {
+const getUserById = (req, res, next) => {
   const id = req.params.userId;
   UserModel.findById(id)
     .then((user) => {
       if (!user) {
-        res.status(NOT_FOUND_ERROR).send({ message: 'Пользователь не найден' });
-        return;
+        throw new NotFoundError('Пользователь не найден');
       }
-      res.send(user);
+      res.send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(VALIDATION_ERROR).send({ message: 'Переданы неверные данные' });
+        next(new BadRequestError('Переданы некорректные данные'));
       } else {
-        res.status(SERVER_ERROR).send({
-          message: 'Ошибка сервера',
-        });
+        next(err);
       }
     });
 };
 
-const getCurrentUser = (req, res) => {
+const getCurrentUser = (req, res, next) => {
   UserModel.findById(req.user._id)
     .then((user) => {
       if (!user) {
-        res.status(NOT_FOUND_ERROR).send({ message: 'Пользователь не найден' });
-        return;
+        throw new NotFoundError('Пользователь не найден');
       }
-      res.send(user);
+      res.send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(VALIDATION_ERROR).send({ message: 'Переданы неверные данные' });
+        next(new BadRequestError('Переданы некорректные данные'));
       } else {
-        res.status(SERVER_ERROR).send({
-          message: 'Ошибка сервера',
-        });
+        next(err);
       }
     });
 };
 
-const updateProfile = (req, res) => {
+const updateProfile = (req, res, next) => {
   const { name, about } = req.body;
   UserModel.findByIdAndUpdate(
     req.user._id,
@@ -79,20 +69,21 @@ const updateProfile = (req, res) => {
     },
   )
     .then((user) => {
-      res.send({ user });
+      if (!user) {
+        throw new NotFoundError('Пользователь не найден');
+      }
+      res.send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(VALIDATION_ERROR).send({ message: 'Переданы неверные данные' });
+        next(new BadRequestError('Переданы некорректные данные'));
       } else {
-        res.status(SERVER_ERROR).send({
-          message: 'Ошибка сервера',
-        });
+        next(err);
       }
     });
 };
 
-const updateAvatar = (req, res) => {
+const updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
   UserModel.findByIdAndUpdate(
     req.user._id,
@@ -100,16 +91,17 @@ const updateAvatar = (req, res) => {
     { new: true },
   )
     .then((user) => {
-      res.send(user);
+      if (!user) {
+        throw new NotFoundError('Пользователь не найден');
+      }
+      res.send({ data: user });
     })
-    .catch(() => {
-      res.status(SERVER_ERROR).send({
-        message: 'Ошибка сервера',
-      });
+    .catch((err) => {
+      next(err);
     });
 };
 
-const createUser = (req, res) => {
+const createUser = (req, res, next) => {
   const {
     name, about, avatar, email, password,
   } = req.body;
@@ -123,18 +115,16 @@ const createUser = (req, res) => {
     })
     .catch((err) => {
       if (err.code === MONGO_DUPLICATE_KEY_ERROR) {
-        res.status(409).send({ messsage: 'Пользователь с этим email уже существет' });
+        next(new UserExist('Пользователь с таким email уже существет'));
       } else if (err.name === 'ValidationError') {
-        res.status(VALIDATION_ERROR).send({ message: 'Переданы некорректные данные' });
+        next(new BadRequestError('Переданы некорректные данные'));
       } else {
-        res.status(SERVER_ERROR).send({
-          message: 'Ошибка сервера',
-        });
+        next(err);
       }
     });
 };
 
-const login = (req, res) => {
+const login = (req, res, next) => {
   const { email, password } = req.body;
   return UserModel.findUserByCredentials(email, password)
     .then((user) => {
@@ -147,13 +137,7 @@ const login = (req, res) => {
       res.status(200).send({ token });
     })
     .catch((err) => {
-      if (err.message === 'NotFound') {
-        res.status(401).send({ message: 'Неправильные почта или пароль' });
-      } else {
-        res.status(SERVER_ERROR).send({
-          message: 'Ошибка сервера',
-        });
-      }
+      next(err);
     });
 };
 
