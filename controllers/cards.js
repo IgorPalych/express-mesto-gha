@@ -46,6 +46,11 @@ const deleteCard = async (req, res) => {
       res.status(NOT_FOUND_ERROR).send({ message: 'Карточка не найдена' });
       return;
     }
+
+    if (card.owner.toString() !== req.user._id) {
+      throw new Error('У вас нет прав на удаление этой карточки');
+    }
+
     res.send(card);
   } catch (err) {
     if (err.name === 'CastError') {

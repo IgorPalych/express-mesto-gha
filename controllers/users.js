@@ -47,6 +47,26 @@ const getUserById = (req, res) => {
     });
 };
 
+const getCurrentUser = (req, res) => {
+  UserModel.findById(req.user._id)
+    .then((user) => {
+      if (!user) {
+        res.status(NOT_FOUND_ERROR).send({ message: 'Пользователь не найден' });
+        return;
+      }
+      res.send(user);
+    })
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        res.status(VALIDATION_ERROR).send({ message: 'Переданы неверные данные' });
+      } else {
+        res.status(SERVER_ERROR).send({
+          message: 'Ошибка сервера',
+        });
+      }
+    });
+};
+
 const updateProfile = (req, res) => {
   const { name, about } = req.body;
   UserModel.findByIdAndUpdate(
@@ -124,7 +144,7 @@ const login = (req, res) => {
         httpOnly: true,
         sameSite: true,
       });
-      res.status(200).send({ message: 'Вы успешно авторизовались!' });
+      res.status(200).send({ token });
     })
     .catch((err) => {
       if (err.message === 'NotFound') {
@@ -140,6 +160,7 @@ const login = (req, res) => {
 module.exports = {
   getUsers,
   getUserById,
+  getCurrentUser,
   createUser,
   updateProfile,
   updateAvatar,
