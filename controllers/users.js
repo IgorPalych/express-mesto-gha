@@ -111,7 +111,15 @@ const createUser = (req, res, next) => {
       name, about, avatar, email, password: hash,
     }))
     .then((user) => {
-      res.status(201).send({ data: user });
+      res.status(201).send({
+        data: {
+          _id: user._id,
+          name: user.name,
+          about: user.about,
+          avatar: user.avatar,
+          email: user.email,
+        },
+      });
     })
     .catch((err) => {
       if (err.code === MONGO_DUPLICATE_KEY_ERROR) {
