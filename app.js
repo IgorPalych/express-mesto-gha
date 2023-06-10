@@ -1,5 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const { errors } = require('celebrate');
+const { validateSignUp, validateSignIn } = require('./middlewares/validate');
 const router = require('./routes');
 
 const { login, createUser } = require('./controllers/users');
@@ -12,12 +14,14 @@ const app = express();
 
 app.use(express.json());
 
-app.post('/signin', login);
-app.post('/signup', createUser);
+app.post('/signin', validateSignIn, login);
+app.post('/signup', validateSignUp, createUser);
 
 app.use(auth);
 
 app.use(router);
+
+app.use(errors());
 
 app.use(handleError);
 
