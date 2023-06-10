@@ -88,7 +88,10 @@ const updateAvatar = (req, res, next) => {
   UserModel.findByIdAndUpdate(
     req.user._id,
     { avatar },
-    { new: true },
+    {
+      new: true,
+      runValidators: true,
+    },
   )
     .then((user) => {
       if (!user) {
@@ -97,7 +100,11 @@ const updateAvatar = (req, res, next) => {
       res.send({ data: user });
     })
     .catch((err) => {
-      next(err);
+      if (err.name === 'ValidationError') {
+        next(new BadRequestError('Переданы некорректные данные'));
+      } else {
+        next(err);
+      }
     });
 };
 

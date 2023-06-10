@@ -35,16 +35,15 @@ const createCard = async (req, res, next) => {
 
 const deleteCard = async (req, res, next) => {
   try {
-    const card = await CardModel.findByIdAndRemove(req.params.cardId);
+    const card = await CardModel.findById(req.params.cardId);
     if (!card) {
       throw new NotFoundError('Нет такой карточки');
     }
-
-    if (card.owner.toString() !== req.user._id) {
+    if (!card.owner.equals(req.user._id)) {
       throw new ForbiddenError('У вас нет прав на удаление этой карточки');
     }
-
-    res.send({ data: card });
+    await CardModel.deleteOne(card);
+    res.send({ message: 'Карточка удалена' });
   } catch (err) {
     if (err.name === 'CastError') {
       next(new BadRequestError('Переданы некорректные данные'));
